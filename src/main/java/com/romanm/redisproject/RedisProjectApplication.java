@@ -58,6 +58,7 @@ public class RedisProjectApplication {
 
 				var indexDefinition = new IndexDefinition().setPrefixes(String.format("%s:", Article.class.getName()));
 
+				client.dropIndex();
 				client.createIndex(sc, Client.IndexOptions.defaultOptions().setDefinition(indexDefinition));
 			} catch (JedisDataException e) {
 				e.printStackTrace();
@@ -158,11 +159,13 @@ class ArticlesController {
 
 	private final JedisConnectionFactory cf;
 
+	private final ArticleRepository articleRepository;
+
 	@GetMapping("/search")
 	SearchResult search(@RequestParam(name = "q") String query,
 						@RequestParam(defaultValue = "-1") Double minPrice,
 						@RequestParam(defaultValue = "-1") Double maxPrice) {
-		try(var client = new Client("articles-idx", cf.getHostName(), cf.getPort())) {
+		try(var client = new Client("article-idx", cf.getHostName(), cf.getPort())) {
 			var q = new Query(query);
 
 			if (minPrice != -1 && maxPrice != -1) {
@@ -172,6 +175,11 @@ class ArticlesController {
 
 			return client.search(q);
 		}
+	}
+
+	@GetMapping()
+	Iterable<Article> getAllArticles() {
+		return articleRepository.findAll();
 	}
 
 	@GetMapping("/authors")
